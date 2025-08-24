@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Моя Бухгалтерия</title>
   <meta name="theme-color" content="#e9d5ff" />
   <link rel="manifest" href="./manifest.webmanifest" />
@@ -25,10 +25,20 @@
     .slide-in{ animation: slideIn .25s ease-out both; }
     @keyframes slideIn{ from{ transform:translateX(8px); opacity:.0;} to{ transform:none; opacity:1; } }
     .glass{ backdrop-filter:saturate(180%) blur(10px); background: rgba(255,255,255,.7); }
-    .field-label{ @apply block text-gray-700 mb-1; }
-    .field{ @apply w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300; }
-    .sec-card{ @apply p-4 rounded-xl border bg-white border-gray-100; }
-    .hsep{ @apply mt-2 pt-2 border-t; }
+
+    /* Унифицированные контролы */
+    .field-label{ display:block; color:#374151; margin-bottom:.25rem; }
+    .field{ width:100%; padding:.5rem .625rem; border:1px solid #e5e7eb; border-radius:.5rem; outline:none; }
+    .field:focus{ box-shadow:0 0 0 3px rgba(165,180,252,.5) }
+
+    .sec-card{ padding:1rem; border-radius:.75rem; border:1px solid #f1f5f9; background:#fff; }
+    .hsep{ margin-top:.5rem; padding-top:.5rem; border-top:1px solid #e5e7eb; }
+
+    /* Компактный режим для узких экранов */
+    .compact .field{ padding:.4rem .55rem; font-size:.875rem; } /* ~14px */
+    .compact .field-label{ font-size:.82rem; margin-bottom:.2rem; }
+    .compact .btn{ padding:.5rem .75rem; font-size:.9rem; }
+    .nowrap{ min-width:0; }
   </style>
 </head>
 <body class="min-h-screen bg-[var(--pastel-bg)] text-[var(--text)] font-sans">
@@ -47,49 +57,49 @@
       <button id="adviceTab" class="flex-1 py-3 px-4 font-medium text-center text-gray-700 hover:bg-indigo-50">🧮 Рекомендации</button>
     </div>
 
-    <!-- Expenses Section -->
-    <section id="expensesSection" class="p-4 space-y-6 slide-in">
-      <div class="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100">
-        <h2 class="text-lg font-semibold mb-3 text-indigo-900">Добавить затраты</h2>
-        <div class="grid gap-3">
-          <div>
+    <!-- Expenses Section (COMPACT) -->
+    <section id="expensesSection" class="p-3 sm:p-4 space-y-4 slide-in">
+      <div class="bg-indigo-50/70 p-3 sm:p-4 rounded-xl border border-indigo-100 compact">
+        <h2 class="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-indigo-900">Добавить затраты</h2>
+        <div class="grid gap-2 sm:gap-3">
+          <div class="nowrap">
             <label class="field-label">Что купили</label>
-            <input type="text" id="itemName" class="field">
+            <input type="text" id="itemName" class="field" inputmode="text">
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <div class="nowrap">
               <label class="field-label">Количество</label>
-              <input type="number" id="itemQuantity" step="0.01" class="field">
+              <input type="number" id="itemQuantity" step="0.01" class="field" inputmode="decimal">
             </div>
-            <div>
+            <div class="nowrap">
               <label class="field-label">Цена за единицу</label>
-              <input type="number" id="itemPrice" step="0.01" class="field">
+              <input type="number" id="itemPrice" step="0.01" class="field" inputmode="decimal">
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <div class="nowrap">
               <label class="field-label">Потрачено (факт)</label>
-              <input type="number" id="amountSpent" step="0.01" class="field">
+              <input type="number" id="amountSpent" step="0.01" class="field" inputmode="decimal">
             </div>
-            <div>
+            <div class="nowrap">
               <label class="field-label">Категория</label>
-              <input type="text" id="itemCategory" placeholder="сырьё, упаковка…" class="field">
+              <input type="text" id="itemCategory" placeholder="сырьё, упаковка…" class="field" inputmode="text">
             </div>
           </div>
-          <div>
+          <div class="nowrap">
             <label class="field-label">Примечание</label>
-            <input type="text" id="itemNote" class="field">
+            <input type="text" id="itemNote" class="field" inputmode="text">
           </div>
-          <button id="addExpense" class="w-full bg-[var(--pastel-primary)] text-white py-2 rounded-xl hover:bg-[var(--pastel-primary-strong)] transition">Добавить</button>
+          <button id="addExpense" class="btn w-full bg-[var(--pastel-primary)] text-white py-2 rounded-xl hover:bg-[var(--pastel-primary-strong)] transition">Добавить</button>
         </div>
       </div>
 
-      <div>
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold text-indigo-900">История затрат</h2>
-          <input id="expenseSearch" placeholder="Поиск…" class="px-3 py-2 text-sm border rounded-lg" />
+      <div class="px-1 sm:px-0">
+        <div class="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+          <h2 class="text-base sm:text-lg font-semibold text-indigo-900">История затрат</h2>
+          <input id="expenseSearch" placeholder="Поиск…" class="px-3 py-2 text-sm border rounded-lg w-40 sm:w-56" />
         </div>
-        <div id="expensesList" class="space-y-3"></div>
+        <div id="expensesList" class="space-y-2 sm:space-y-3"></div>
       </div>
     </section>
 
@@ -106,7 +116,7 @@
             <label class="field-label">Что нужно сделать</label>
             <textarea id="orderDescription" rows="2" class="field"></textarea>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="field-label">Когда привезти</label>
               <input type="date" id="orderDeliveryDate" class="field">
@@ -116,7 +126,7 @@
               <input type="number" id="orderAmount" step="0.01" class="field">
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="field-label">Статус оплаты</label>
               <select id="orderPaymentStatus" class="field">
@@ -180,7 +190,7 @@
 
       <div class="sec-card">
         <div class="grid gap-3">
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="field-label">Себестоимость, за шт (₽)</label>
               <input type="number" id="recCostPerUnit" step="0.01" class="field" placeholder="например, 120">
@@ -190,7 +200,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="field-label">Наценка (%)</label>
               <input type="number" id="recMarkup" step="0.1" class="field" value="30">
@@ -209,7 +219,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="field-label">Округление</label>
               <div class="grid grid-cols-2 gap-2">
@@ -251,7 +261,7 @@
 
       <div class="sec-card">
         <h3 class="font-semibold mb-2">Конвертер: цена за кг ↔ цена за шт.</h3>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="field-label">Средняя масса изделия</label>
             <div class="flex gap-2">
@@ -277,19 +287,19 @@
     </section>
 
     <!-- Summary Card -->
-    <div class="sticky bottom-0 left-0 right-0 bg-white/80 glass p-4 border-t">
-      <div class="flex justify-between">
-        <div class="text-center">
-          <p class="text-sm text-gray-500">Общие затраты</p>
-          <p id="totalExpenses" class="font-bold text-rose-700">0 ₽</p>
+    <div class="sticky bottom-0 left-0 right-0 bg-white/80 glass p-3 sm:p-4 border-t">
+      <div class="flex justify-between gap-2">
+        <div class="text-center min-w-0">
+          <p class="text-xs text-gray-500">Общие затраты</p>
+          <p id="totalExpenses" class="font-bold text-rose-700 text-sm sm:text-base truncate">0 ₽</p>
         </div>
-        <div class="text-center">
-          <p class="text-sm text-gray-500">Ожидаемый доход</p>
-          <p id="expectedIncome" class="font-bold text-indigo-700">0 ₽</p>
+        <div class="text-center min-w-0">
+          <p class="text-xs text-gray-500">Ожидаемый доход</p>
+          <p id="expectedIncome" class="font-bold text-indigo-700 text-sm sm:text-base truncate">0 ₽</p>
         </div>
-        <div class="text-center">
-          <p class="text-sm text-gray-500">Получено</p>
-          <p id="receivedIncome" class="font-bold text-emerald-700">0 ₽</p>
+        <div class="text-center min-w-0">
+          <p class="text-xs text-gray-500">Получено</p>
+          <p id="receivedIncome" class="font-bold text-emerald-700 text-sm sm:text-base truncate">0 ₽</p>
         </div>
       </div>
     </div>
@@ -313,6 +323,22 @@
     const DB_NAME = 'accbook_v3';
     const STORE = 'records';
     let dbPromise;
+
+    // Helpers first, so we can use them anywhere
+    const $ = (id)=> document.getElementById(id);
+    const money = (n)=> (isFinite(n)? (Math.round(n*100)/100).toFixed(2) : '—') + ' ₽';
+    const num = (v, def=0)=>{ const x = parseFloat(v); return isNaN(x)?def:x; };
+    function roundBy(value, step, mode){
+      if (!isFinite(value)) return value;
+      step = step>0 ? step : 1;
+      const q = value/step;
+      let r = q;
+      if (mode==='up') r = Math.ceil(q);
+      else if (mode==='down') r = Math.floor(q);
+      else r = Math.round(q); // nearest
+      return r*step;
+    }
+
     function openDB(){
       if (dbPromise) return dbPromise;
       dbPromise = new Promise((resolve, reject)=>{
@@ -362,7 +388,7 @@
     async function loadState(){
       const migrated = await idbGet(ns('migrated_v3'));
       if (!migrated){
-        // try to pull old data (v2 keys) once
+        // попытка миграции из старых ключей/LS
         const oldExpenses = await idbGet(`${currentUser.id}:expenses`) ?? JSON.parse(localStorage.getItem('expenses')||'[]');
         const oldOrders = await idbGet(`${currentUser.id}:orders`) ?? JSON.parse(localStorage.getItem('orders')||'[]');
         if (oldExpenses.length || oldOrders.length){
@@ -381,6 +407,7 @@
       $('roundMode').value = settings.roundMode;
       $('roundStep').value = settings.roundStep;
     }
+
     async function saveState(){
       await idbSet(ns('expenses'), expenses);
       await idbSet(ns('orders'), orders);
@@ -396,21 +423,6 @@
       await idbSet(ns('settings'), settings);
     }
 
-    /* UI helpers */
-    const $ = (id)=> document.getElementById(id);
-    const money = (n)=> (isFinite(n)? (Math.round(n*100)/100).toFixed(2) : '—') + ' ₽';
-    const num = (v, def=0)=>{ const x = parseFloat(v); return isNaN(x)?def:x; };
-    function roundBy(value, step, mode){
-      if (!isFinite(value)) return value;
-      step = step>0 ? step : 1;
-      const q = value/step;
-      let r = q;
-      if (mode==='up') r = Math.ceil(q);
-      else if (mode==='down') r = Math.floor(q);
-      else r = Math.round(q); // nearest
-      return r*step;
-    }
-
     /* Renderers */
     function renderExpenses(filter=''){
       const container = $('expensesList');
@@ -421,18 +433,18 @@
         const el = document.createElement('div');
         el.className = 'bg-white p-3 rounded-xl shadow border border-gray-100';
         el.innerHTML = `
-          <div class="flex justify-between items-start">
-            <div>
-              <h3 class="font-medium">${expense.name}</h3>
-              <p class="text-xs text-gray-500">${expense.date} · ${expense.category||'без категории'}</p>
+          <div class="flex justify-between items-start gap-2">
+            <div class="min-w-0">
+              <h3 class="font-medium truncate">${expense.name}</h3>
+              <p class="text-[11px] text-gray-500">${expense.date} · ${expense.category||'без категории'}</p>
             </div>
-            <div class="flex gap-2">
-              <button data-take="${expense.id}" class="text-emerald-700 hover:underline text-sm">Взять в рекомендации</button>
-              <button data-edit="${expense.id}" class="text-indigo-600 hover:underline text-sm">Изм.</button>
-              <button data-del="${expense.id}" class="text-rose-500">🗑️</button>
+            <div class="flex gap-2 shrink-0">
+              <button data-take="${expense.id}" class="text-emerald-700 hover:underline text-xs sm:text-sm">Взять</button>
+              <button data-edit="${expense.id}" class="text-indigo-600 hover:underline text-xs sm:text-sm">Изм.</button>
+              <button data-del="${expense.id}" class="text-rose-500 text-sm">🗑️</button>
             </div>
           </div>
-          <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+          <div class="mt-2 grid grid-cols-2 gap-2 text-xs sm:text-sm">
             <div><p class="text-gray-500">Кол-во</p><p>${expense.quantity} шт</p></div>
             <div><p class="text-gray-500">Цена за шт</p><p>${money(expense.price)}</p></div>
             <div><p class="text-gray-500">Потрачено</p><p>${money(expense.spent)}</p></div>
@@ -515,19 +527,17 @@
       const mInc = orders.filter(o=> isMonth(o.dateISO)).reduce((s,o)=> s+(o.amount||0), 0);
       const mPaid = orders.filter(o=> isMonth(o.dateISO)).reduce((s,o)=> s+(o.received||0), 0);
 
-      // Плановая маржа теперь = сумма(итого_затрата * (наценка% / 100))
+      // Плановая маржа = сумма(итого_затрата * (наценка% / 100))
       const markup = (settings.recMarkup||0)/100;
       const mMargin = expenses.filter(e=> isMonth(e.dateISO)).reduce((s,e)=> s+( (e.totalCost||0)*markup ), 0);
 
-      if ($('mExp')){
-        $('mExp').textContent = money(mExp);
-        $('mInc').textContent = money(mInc);
-        $('mPaid').textContent = money(mPaid);
-        $('mMargin').textContent = money(mMargin);
-      }
+      $('mExp').textContent = money(mExp);
+      $('mInc').textContent = money(mInc);
+      $('mPaid').textContent = money(mPaid);
+      $('mMargin').textContent = money(mMargin);
     }
 
-    /* CRUD + handlers: Expenses / Orders */
+    /* CRUD + handlers */
     $('addExpense').addEventListener('click', async ()=>{
       const name = $('itemName').value.trim();
       const quantity = num($('itemQuantity').value);
