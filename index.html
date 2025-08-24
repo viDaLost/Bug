@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Моя Бухгалтерия</title>
+  <meta name="theme-color" content="#e9d5ff" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --pastel-bg:#fafaff; /* near-white lilac */
+      --pastel-card:#ffffff;
+      --pastel-accent:#c7d2fe; /* periwinkle */
+      --pastel-primary:#a78bfa; /* soft violet */
+      --pastel-primary-strong:#8b5cf6; /* hover */
+      --pastel-success:#bbf7d0; /* mint */
+      --pastel-warning:#fde68a; /* soft yellow */
+      --pastel-danger:#fecaca; /* rose */
+      --text:#1f2937;
+    }
+    .active-tab{ background: var(--pastel-primary); color:#fff; }
+    .slide-in{ animation: slideIn .25s ease-out both; }
+    @keyframes slideIn{ from{ transform:translateX(8px); opacity:.0;} to{ transform:none; opacity:1; } }
+    .glass{ backdrop-filter:saturate(180%) blur(10px); background: rgba(255,255,255,.7); }
+  </style>
+</head>
+<body class="min-h-screen bg-[var(--pastel-bg)] text-[var(--text)] font-sans">
+  <div class="container mx-auto max-w-md min-h-screen bg-[var(--pastel-card)] shadow-xl rounded-2xl overflow-hidden">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-[#f5e0ff] via-[#e9d5ff] to-[#dbeafe] p-4 shadow">
+      <h1 class="text-xl font-bold text-center tracking-wide">Моя бухгалтерия</h1>
+      <p id="userBadge" class="mt-1 text-center text-xs text-gray-600">Гость · офлайн</p>
+    </header>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-indigo-100">
+      <button id="expensesTab" class="flex-1 py-3 px-4 font-medium text-center active-tab rounded-b-none">📑 Затраты</button>
+      <button id="ordersTab" class="flex-1 py-3 px-4 font-medium text-center text-gray-700 hover:bg-indigo-50">🧾 Заказы</button>
+      <button id="analyticsTab" class="flex-1 py-3 px-4 font-medium text-center text-gray-700 hover:bg-indigo-50">📊 Аналитика</button>
+    </div>
+
+    <!-- Expenses Section -->
+    <section id="expensesSection" class="p-4 space-y-6 slide-in">
+      <div class="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100">
+        <h2 class="text-lg font-semibold mb-3 text-indigo-900">Добавить затраты</h2>
+        <div class="grid gap-3">
+          <div>
+            <label class="block text-gray-700 mb-1">Что купили</label>
+            <input type="text" id="itemName" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-gray-700 mb-1">Количество</label>
+              <input type="number" id="itemQuantity" step="0.01" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+            </div>
+            <div>
+              <label class="block text-gray-700 mb-1">Цена за единицу</label>
+              <input type="number" id="itemPrice" step="0.01" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-gray-700 mb-1">Потрачено (факт)</label>
+              <input type="number" id="amountSpent" step="0.01" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+            </div>
+            <div>
+              <label class="block text-gray-700 mb-1">Наценка (%)</label>
+              <input type="number" id="markup" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300" value="30">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-gray-700 mb-1">Категория</label>
+              <input type="text" id="itemCategory" placeholder="сырьё, упаковка…" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+            </div>
+            <div>
+              <label class="block text-gray-700 mb-1">Примечание</label>
+              <input type="text" id="itemNote" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+            </div>
+          </div>
+          <button id="addExpense" class="w-full bg-[var(--pastel-primary)] text-white py-2 rounded-xl hover:bg-[var(--pastel-primary-strong)] transition">Добавить</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold text-indigo-900">История затрат</h2>
+          <input id="expenseSearch" placeholder="Поиск…" class="px-3 py-2 text-sm border rounded-lg" />
+        </div>
+        <div id="expensesList" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- Orders Section -->
+    <section id="ordersSection" class="p-4 hidden space-y-6">
+      <div class="bg-blue-50/70 p-4 rounded-xl border border-blue-100">
+        <h2 class="text-lg font-semibold mb-3 text-blue-900">Добавить заказ</h2>
+        <div class="grid gap-3">
+          <div>
+            <label class="block text-gray-700 mb-1">Куда (магазин/кафе)</label>
+            <input type="text" id="orderDestination" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">Что нужно сделать</label>
+            <textarea id="orderDescription" rows="2" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-gray-700 mb-1">Когда привезти</label>
+              <input type="date" id="orderDeliveryDate" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+            </div>
+            <div>
+              <label class="block text-gray-700 mb-1">Сумма к оплате</label>
+              <input type="number" id="orderAmount" step="0.01" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-gray-700 mb-1">Статус оплаты</label>
+              <select id="orderPaymentStatus" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+                <option value="unpaid">Не оплачено</option>
+                <option value="deposit">Задаток</option>
+                <option value="paid">Оплачено</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-700 mb-1">Получено (₽)</label>
+              <input type="number" id="orderReceived" step="0.01" value="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-300">
+            </div>
+          </div>
+          <button id="addOrder" class="w-full bg-[var(--pastel-primary)] text-white py-2 rounded-xl hover:bg-[var(--pastel-primary-strong)] transition">Добавить заказ</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold text-blue-900">Список заказов</h2>
+          <input id="orderSearch" placeholder="Поиск…" class="px-3 py-2 text-sm border rounded-lg" />
+        </div>
+        <div id="ordersList" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- Analytics Section -->
+    <section id="analyticsSection" class="p-4 hidden space-y-3">
+      <h2 class="text-lg font-semibold text-purple-900">Аналитика</h2>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div class="p-3 rounded-xl border bg-white">
+          <p class="text-gray-500">Затраты (месяц)</p>
+          <p id="mExp" class="text-lg font-bold">0 ₽</p>
+        </div>
+        <div class="p-3 rounded-xl border bg-white">
+          <p class="text-gray-500">Доход (месяц)</p>
+          <p id="mInc" class="text-lg font-bold">0 ₽</p>
+        </div>
+        <div class="p-3 rounded-xl border bg-white">
+          <p class="text-gray-500">Маржа (план)</p>
+          <p id="mMargin" class="text-lg font-bold">0 ₽</p>
+        </div>
+        <div class="p-3 rounded-xl border bg-white">
+          <p class="text-gray-500">Оплачено (факт)</p>
+          <p id="mPaid" class="text-lg font-bold">0 ₽</p>
+        </div>
+      </div>
+      <button id="exportCsv" class="mt-2 w-full border rounded-xl py-2 hover:bg-indigo-50">Экспорт CSV</button>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="backupBtn" class="border rounded-xl py-2 hover:bg-indigo-50">Резервная копия</button>
+        <label class="border rounded-xl py-2 text-center cursor-pointer hover:bg-indigo-50">
+          Восстановить <input id="restoreFile" type="file" accept="application/json" class="hidden">
+        </label>
+      </div>
+    </section>
+
+    <!-- Summary Card -->
+    <div class="sticky bottom-0 left-0 right-0 bg-white/80 glass p-4 border-t">
+      <div class="flex justify-between">
+        <div class="text-center">
+          <p class="text-sm text-gray-500">Общие затраты</p>
+          <p id="totalExpenses" class="font-bold text-rose-700">0 ₽</p>
+        </div>
+        <div class="text-center">
+          <p class="text-sm text-gray-500">Ожидаемый доход</p>
+          <p id="expectedIncome" class="font-bold text-indigo-700">0 ₽</p>
+        </div>
+        <div class="text-center">
+          <p class="text-sm text-gray-500">Получено</p>
+          <p id="receivedIncome" class="font-bold text-emerald-700">0 ₽</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Telegram WebApp Auth */
+    const tg = window.Telegram?.WebApp;
+    let currentUser = { id: 'guest', name: 'Гость' };
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      const u = tg.initDataUnsafe.user;
+      currentUser = {
+        id: String(u.id),
+        name: [u.first_name, u.last_name].filter(Boolean).join(' ') || (u.username?('@'+u.username):'Пользователь')
+      };
+      try{ tg.expand(); tg.setHeaderColor('#e9d5ff'); tg.setBackgroundColor('#fafaff'); }catch(e){}
+    }
+    document.getElementById('userBadge').textContent = `${currentUser.name} · ${navigator.onLine?'онлайн':'офлайн'}`;
+
+    /* IndexedDB wrapper */
+    const DB_NAME = 'accbook_v2';
+    const STORE = 'records';
+    let dbPromise;
+    function openDB(){
+      if (dbPromise) return dbPromise;
+      dbPromise = new Promise((resolve, reject)=>{
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = ()=>{
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE)){
+            db.createObjectStore(STORE, { keyPath: 'key' });
+          }
+        };
+        req.onsuccess = ()=> resolve(req.result);
+        req.onerror = ()=> reject(req.error);
+      });
+      return dbPromise;
+    }
+    async function idbSet(key, value){
+      const db = await openDB();
+      return new Promise((res, rej)=>{
+        const tx = db.transaction(STORE,'readwrite');
+        tx.objectStore(STORE).put({key, value});
+        tx.oncomplete=()=>res();
+        tx.onerror=()=>rej(tx.error);
+      });
+    }
+    async function idbGet(key){
+      const db = await openDB();
+      return new Promise((res, rej)=>{
+        const tx = db.transaction(STORE,'readonly');
+        const r = tx.objectStore(STORE).get(key);
+        r.onsuccess=()=>res(r.result?.value);
+        r.onerror=()=>rej(r.error);
+      });
+    }
+    const ns = (suffix)=> `${currentUser.id}:${suffix}`;
+
+    /* Data state */
+    let expenses = [];
+    let orders = [];
+    async function loadState(){
+      const migrated = await idbGet(ns('migrated'));
+      if (!migrated){
+        const lsExp = JSON.parse(localStorage.getItem('expenses')||'[]');
+        const lsOrd = JSON.parse(localStorage.getItem('orders')||'[]');
+        if (lsExp.length || lsOrd.length){
+          await idbSet(ns('expenses'), lsExp);
+          await idbSet(ns('orders'), lsOrd);
+        }
+        await idbSet(ns('migrated'), true);
+      }
+      expenses = (await idbGet(ns('expenses'))) || [];
+      orders = (await idbGet(ns('orders'))) || [];
+    }
+    async function saveState(){
+      await idbSet(ns('expenses'), expenses);
+      await idbSet(ns('orders'), orders);
+    }
+
+    /* UI helpers */
+    const $ = (id)=> document.getElementById(id);
+    function money(n){ return (n||0).toFixed(2) + ' ₽'; }
+
+    function renderExpenses(filter=''){
+      const container = $('expensesList');
+      container.innerHTML = '';
+      const list = expenses.filter(e=> JSON.stringify(e).toLowerCase().includes(filter.toLowerCase()));
+      if (!list.length){ container.innerHTML = '<p class="text-gray-500 text-center py-4">Нет данных о затратах</p>'; return; }
+      list.slice().reverse().forEach(expense=>{
+        const el = document.createElement('div');
+        el.className = 'bg-white p-3 rounded-xl shadow border border-gray-100';
+        el.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-medium">${expense.name}</h3>
+              <p class="text-xs text-gray-500">${expense.date} · ${expense.category||'без категории'}</p>
+            </div>
+            <div class="flex gap-2">
+              <button data-edit="${expense.id}" class="text-indigo-600 hover:underline text-sm">Изм.</button>
+              <button data-del="${expense.id}" class="text-rose-500">🗑️</button>
+            </div>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <div><p class="text-gray-500">Кол-во</p><p>${expense.quantity} шт</p></div>
+            <div><p class="text-gray-500">Цена за шт</p><p>${money(expense.price)}</p></div>
+            <div><p class="text-gray-500">Потрачено</p><p>${money(expense.spent)}</p></div>
+            <div><p class="text-gray-500">Наценка</p><p>${expense.markup}%</p></div>
+          </div>
+          <div class="mt-2 pt-2 border-t">
+            <div class="flex justify-between"><p class="font-medium">Общая стоимость:</p><p class="font-medium">${money(expense.totalCost)}</p></div>
+            <div class="flex justify-between text-indigo-700"><p class="font-medium">Итоговая цена:</p><p class="font-medium">${money(expense.finalPrice)}</p></div>
+          </div>`;
+        el.querySelector(`[data-del]`).onclick = async ()=>{
+          if (confirm('Удалить эту запись о затратах?')){
+            expenses = expenses.filter(x=>x.id!==expense.id);
+            await saveState(); renderExpenses(filter); updateSummary();
+          }
+        };
+        el.querySelector(`[data-edit]`).onclick = ()=> editExpense(expense.id);
+        container.appendChild(el);
+      });
+    }
+
+    function renderOrders(filter=''){
+      const container = $('ordersList');
+      container.innerHTML = '';
+      const list = orders.filter(e=> JSON.stringify(e).toLowerCase().includes(filter.toLowerCase()));
+      if (!list.length){ container.innerHTML = '<p class="text-gray-500 text-center py-4">Нет данных о заказах</p>'; return; }
+
+      list.slice().reverse().forEach(order=>{
+        let badgeClass = 'bg-gray-100 text-gray-800';
+        let statusText = '—';
+        if(order.paymentStatus==='unpaid'){ badgeClass='bg-[var(--pastel-danger)] text-rose-900'; statusText='Не оплачено'; }
+        if(order.paymentStatus==='deposit'){ badgeClass='bg-[var(--pastel-warning)] text-amber-900'; statusText='Задаток'; }
+        if(order.paymentStatus==='paid'){ badgeClass='bg-[var(--pastel-success)] text-emerald-900'; statusText='Оплачено'; }
+        const el = document.createElement('div');
+        el.className = 'bg-white p-3 rounded-xl shadow border border-gray-100';
+        el.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-medium">${order.destination}</h3>
+              <p class="text-xs text-gray-500">${order.date}</p>
+            </div>
+            <div class="flex gap-2">
+              <button data-edit="${order.id}" class="text-indigo-600 hover:underline text-sm">Изм.</button>
+              <button data-del="${order.id}" class="text-rose-500">🗑️</button>
+            </div>
+          </div>
+          <div class="mt-2"><p class="text-gray-700 whitespace-pre-line">${order.description}</p></div>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <div><p class="text-gray-500">Дата доставки</p><p>${order.deliveryDate}</p></div>
+            <div><p class="text-gray-500">Сумма</p><p class="font-medium">${money(order.amount)}</p></div>
+          </div>
+          <div class="mt-2 pt-2 border-t flex items-center justify-between">
+            <span class="px-2 py-1 rounded-full text-xs ${badgeClass}">${statusText}</span>
+            <span class="text-xs text-gray-600">Получено: <b>${money(order.received||0)}</b></span>
+          </div>`;
+        el.querySelector(`[data-del]`).onclick = async ()=>{
+          if (confirm('Удалить этот заказ?')){
+            orders = orders.filter(x=>x.id!==order.id);
+            await saveState(); renderOrders(filter); updateSummary();
+          }
+        };
+        el.querySelector(`[data-edit]`).onclick = ()=> editOrder(order.id);
+        container.appendChild(el);
+      });
+    }
+
+    function updateSummary(){
+      const totalExpenses = expenses.reduce((s,e)=> s + (e.spent||0), 0);
+      const expectedIncome = orders.reduce((s,o)=> s + (o.amount||0), 0);
+      const receivedIncome = orders.reduce((s,o)=> s + (o.received|| (o.paymentStatus==='paid'?o.amount:0) ), 0);
+      $('totalExpenses').textContent = money(totalExpenses);
+      $('expectedIncome').textContent = money(expectedIncome);
+      $('receivedIncome').textContent = money(receivedIncome);
+
+      // Monthly quick stats
+      const now = new Date();
+      const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const isMonth = (d)=> (d||'').startsWith(ym);
+      const mExp = expenses.filter(e=> isMonth(e.dateISO)).reduce((s,e)=> s+(e.spent||0), 0);
+      const mInc = orders.filter(o=> isMonth(o.dateISO)).reduce((s,o)=> s+(o.amount||0), 0);
+      const mPaid = orders.filter(o=> isMonth(o.dateISO)).reduce((s,o)=> s+(o.received||0), 0);
+      const mMargin = expenses.filter(e=> isMonth(e.dateISO)).reduce((s,e)=> s+( (e.finalPrice||0) - (e.totalCost||0) ), 0);
+      if ($('mExp')){
+        $('mExp').textContent = money(mExp);
+        $('mInc').textContent = money(mInc);
+        $('mPaid').textContent = money(mPaid);
+        $('mMargin').textContent = money(mMargin);
+      }
+    }
+
+    /* CRUD + handlers */
+    document.getElementById('addExpense').addEventListener('click', async ()=>{
+      const name = $('itemName').value.trim();
+      const quantity = parseFloat($('itemQuantity').value);
+      const price = parseFloat($('itemPrice').value);
+      const spent = parseFloat($('amountSpent').value);
+      const markup = parseFloat($('markup').value) || 0;
+      const category = $('itemCategory').value.trim();
+      const note = $('itemNote').value.trim();
+      if (!name || isNaN(quantity) || isNaN(price) || isNaN(spent)) { alert('Пожалуйста, заполните все поля корректно'); return; }
+      const totalCost = price * quantity;
+      const finalPrice = totalCost * (1 + markup/100);
+      const now = new Date();
+      const expense = { id: Date.now(), name, quantity, price, spent, markup, totalCost, finalPrice, category, note, date: now.toLocaleDateString(), dateISO: now.toISOString().slice(0,7) };
+      expenses.push(expense); await saveState(); renderExpenses($('expenseSearch').value); updateSummary();
+      ['itemName','itemQuantity','itemPrice','amountSpent','itemCategory','itemNote'].forEach(id=> $(id).value=''); $('markup').value = 30;
+    });
+
+    document.getElementById('addOrder').addEventListener('click', async ()=>{
+      const destination = $('orderDestination').value.trim();
+      const description = $('orderDescription').value.trim();
+      const deliveryDate = $('orderDeliveryDate').value;
+      const amount = parseFloat($('orderAmount').value);
+      const paymentStatus = $('orderPaymentStatus').value;
+      const received = parseFloat($('orderReceived').value)||0;
+      if (!destination || !description || !deliveryDate || isNaN(amount)) { alert('Пожалуйста, заполните все поля корректно'); return; }
+      const now = new Date();
+      const order = { id: Date.now(), destination, description, deliveryDate, amount, paymentStatus, received, date: now.toLocaleDateString(), dateISO: now.toISOString().slice(0,7) };
+      orders.push(order); await saveState(); renderOrders($('orderSearch').value); updateSummary();
+      ['orderDestination','orderDescription','orderDeliveryDate','orderAmount','orderReceived'].forEach(id=> $(id).value=''); $('orderPaymentStatus').value='unpaid';
+    });
+
+    function editExpense(id){
+      const e = expenses.find(x=>x.id===id); if(!e) return;
+      const name = prompt('Название', e.name); if (name===null) return;
+      const quantity = parseFloat(prompt('Количество', e.quantity)); if(isNaN(quantity)) return;
+      const price = parseFloat(prompt('Цена за шт', e.price)); if(isNaN(price)) return;
+      const spent = parseFloat(prompt('Потрачено (факт)', e.spent)); if(isNaN(spent)) return;
+      const markup = parseFloat(prompt('Наценка %', e.markup)); if(isNaN(markup)) return;
+      const category = prompt('Категория', e.category||'')||'';
+      const note = prompt('Примечание', e.note||'')||'';
+      e.name=name; e.quantity=quantity; e.price=price; e.spent=spent; e.markup=markup; e.category=category; e.note=note;
+      e.totalCost = price*quantity; e.finalPrice = e.totalCost*(1+markup/100);
+      saveState().then(()=>{ renderExpenses($('expenseSearch').value); updateSummary(); });
+    }
+
+    function editOrder(id){
+      const o = orders.find(x=>x.id===id); if(!o) return;
+      const destination = prompt('Куда', o.destination); if(destination===null) return;
+      const description = prompt('Описание', o.description); if(description===null) return;
+      const deliveryDate = prompt('Дата доставки (ГГГГ-ММ-ДД)', o.deliveryDate)||o.deliveryDate;
+      const amount = parseFloat(prompt('Сумма', o.amount)); if(isNaN(amount)) return;
+      const status = prompt('Статус (unpaid/deposit/paid)', o.paymentStatus)||o.paymentStatus;
+      const received = parseFloat(prompt('Получено', o.received||0)); if(isNaN(received)) return;
+      o.destination=destination; o.description=description; o.deliveryDate=deliveryDate; o.amount=amount; o.paymentStatus=status; o.received=received;
+      saveState().then(()=>{ renderOrders($('orderSearch').value); updateSummary(); });
+    }
+
+    /* Filters, Tabs, Export/Backup */
+    $('expenseSearch').addEventListener('input', (e)=> renderExpenses(e.target.value));
+    $('orderSearch').addEventListener('input', (e)=> renderOrders(e.target.value));
+
+    $('expensesTab').onclick = ()=>{ toggleTab('expenses'); };
+    $('ordersTab').onclick = ()=>{ toggleTab('orders'); };
+    $('analyticsTab').onclick = ()=>{ toggleTab('analytics'); };
+
+    function toggleTab(which){
+      const map = { expenses:'expensesSection', orders:'ordersSection', analytics:'analyticsSection' };
+      for (const k of Object.keys(map)){
+        $(map[k]).classList.toggle('hidden', k!==which);
+        const tab = $(k+'Tab');
+        if (tab){ tab.classList.toggle('active-tab', k===which); tab.classList.toggle('text-gray-700', k!==which); }
+      }
+    }
+
+    $('exportCsv').onclick = ()=>{
+      const rows = [
+        ['type','id','date','name/destination','quantity','price','spent','markup','totalCost','finalPrice','category','note','deliveryDate','amount','status','received']
+      ];
+      expenses.forEach(e=> rows.push(['expense', e.id, e.date, e.name, e.quantity, e.price, e.spent, e.markup, e.totalCost, e.finalPrice, e.category||'', e.note||'', '', '', '', '']));
+      orders.forEach(o=> rows.push(['order', o.id, o.date, o.destination, '', '', '', '', '', '', '', '', o.deliveryDate, o.amount, o.paymentStatus, o.received||0]));
+      const csv = rows.map(r=> r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'accbook_export.csv'; a.click();
+    };
+
+    $('backupBtn').onclick = ()=>{
+      const data = { user: currentUser, expenses, orders, ts: Date.now() };
+      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'accbook_backup.json'; a.click();
+    };
+
+    $('restoreFile').addEventListener('change', async (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const text = await file.text();
+      try{
+        const data = JSON.parse(text);
+        if (Array.isArray(data.expenses) && Array.isArray(data.orders)){
+          expenses = data.expenses; orders = data.orders; await saveState(); renderExpenses($('expenseSearch').value); renderOrders($('orderSearch').value); updateSummary(); alert('Данные восстановлены');
+        } else { alert('Формат файла не распознан'); }
+      }catch(err){ alert('Ошибка чтения файла'); }
+      e.target.value = '';
+    });
+
+    /* App init */
+    window.addEventListener('online', ()=> $('userBadge').textContent = `${currentUser.name} · онлайн`);
+    window.addEventListener('offline', ()=> $('userBadge').textContent = `${currentUser.name} · офлайн`);
+
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      if ('serviceWorker' in navigator){ try{ await navigator.serviceWorker.register('./sw.js'); }catch(e){ console.warn('SW failed', e); } }
+      await loadState();
+      renderExpenses(); renderOrders(); updateSummary();
+      const today = new Date().toISOString().split('T')[0];
+      $('orderDeliveryDate').value = today;
+    });
+  </script>
+</body>
+</html>
